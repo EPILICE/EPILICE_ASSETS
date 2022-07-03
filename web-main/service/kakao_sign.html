@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <title>Kakao Login</title>
+    <script src="https://developers.kakao.com/sdk/js/kakao.js"></script>
+    <script>
+        Kakao.init('a453914c4e98927ac2ce1593f7a438e2');
+    </script>
+  </head>
+  <body>
+    <script type="text/javascript">
+      window.onload = function loginWithKakao() {
+        Kakao.Auth.login({
+          success: function(authObj) {
+            console.log(authObj);
+            LoginSuccess.postMessage(authObj);
+          },
+          fail: function(err) {
+            alert(JSON.stringify(err))
+          },
+        })
+      }
+    </script>
+  </body>
+</html>

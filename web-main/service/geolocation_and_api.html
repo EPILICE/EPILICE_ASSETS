@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Kakao Geolocation</title>
+</head>
+<body>	
+	
+<div id="map" style="width:100%;height:100vh;"></div>
+
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=c1aa3d76934e4dbe25ef9f1bfab1c1ea"></script>
+<script>
+
+    var xLocation = 37.56435;
+    var yLocation = 126.99093;
+
+    var imageSrc = "https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png"; 
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        var lat = position.coords.latitude, // 위도
+            lon = position.coords.longitude; // 경도
+        
+        var locPosition = new kakao.maps.LatLng(lat, lon)
+            message = '<div style="padding:5px;">여기에 계신가요?!</div>';
+
+        map.setCenter(locPosition);
+      });
+    } else {}
+
+    var mapContainer = document.getElementById('map'),
+
+    mapOption = {
+      center: new kakao.maps.LatLng(xLocation, yLocation),
+      level: 1,
+      mapTypeId : kakao.maps.MapTypeId.ROADMAP
+    };     
+
+    var map = new kakao.maps.Map(mapContainer, mapOption);     
+
+    kakao.maps.event.addListener(map, 'dragend', async function () {
+      var latlng = map.getCenter(); 
+        console.log(latlng.getLat()); // y
+        console.log(latlng.getLng()); // x
+      var result = await convert(latlng.getLng(), latlng.getLat());
+      callbackMessage(map.getCenter());
+    });
+    
+    function callbackMessage(location) {
+      try { 
+        // onComplete.postMessage(location.toString()); 
+      } catch(err) {
+        console.log(err.toString());
+      }
+    }
+
+    async function convert(x, y) {
+      var getUrl = 'https://corsmythologyj.herokuapp.com/https://mythology-server.vercel.app/api/kakao/administrativeDistrict?restKey=9d7734435a48793d6c3bb1dfbd2aad90&x='+x+'&y='+y;
+      fetch(getUrl, {
+        method: 'GET',
+        cors: 'cors',
+        cache: 'force-cache',
+      }).then(res => {
+        return res.json();
+      }).then(data => {
+        console.log(data);
+        console.log(data['documents'][0]['code'].substring(0., 5));
+        searchLocationData(data['documents'][0]['code'].substring(0., 5));
+        return data;
+      }).catch(err => {
+        console.log(err.toString());
+        return null;
+      });
+    }
+
+    var locationData = [];
+
+    async function searchLocationData(locationCode) {
+      var getUrl = 'https://mythology-server.vercel.app/api/openApi/apartData?locationCode='+locationCode;
+      fetch(getUrl, {
+        method: 'GET',
+        cors: 'cors',
+        cache: 'force-cache',
+      }).then(res => {
+        return res.json();
+      }).then(data => {
+        console.log(data);
+        locationData = data['response']['body']['items']['item'];
+
+        for(var i = 0; i < locationData.length; i++){
+          convertLocation(locationData[i]['법정동']+locationData[i]['아파트'], locationData[i]['아파트']);
+        }
+
+        return data;
+      }).catch(err => {
+        console.log(err.toString());
+        return null;
+      });
+    }
+
+    async function convertLocation(address, name) {
+      var getUrl = 'https://mythology-server.vercel.app/api/kakao/convertKeywordToLocation?address='+address+'&restKey=9d7734435a48793d6c3bb1dfbd2aad90';
+      fetch(getUrl, {
+        method: 'GET',
+        cors: 'cors',
+        cache: 'force-cache',
+      }).then(res => {
+        return res.json();
+      }).then(data => {
+        console.log(data);
+        if(data['documents'] != null){
+          new kakao.maps.Marker({
+		  title: data,
+	          position: new kakao.maps.LatLng(data['documents']['0']['y'], data['documents']['0']['x']),
+	          map: map
+	        });
+	      onComplete.postMessage(JSON.stringify(data));
+        }
+        return data;
+      }).catch(err => {
+        console.log(err.toString());
+        return null;
+      });
+    }
+</script>
+
+</body>
+</html>
